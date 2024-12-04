@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>Control Taller</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4CAF50">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Control Taller">
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+    <script>
+        (function() {
+            emailjs.init("TU_PUBLIC_KEY");
+        })();
+    </script>
+</head>
+<body>
+    <h1>Control Taller</h1>
+    <div class="reparaciones-container">
+        <div class="botones">
+            <button onclick="abrirFormulario()">Ingresar Reparación</button>
+            <button id="subirDrive" onclick="subirADrive()" disabled>Subir a Drive</button>
+            <button onclick="exportarAExcel()">Exportar a Excel</button>
+            <button onclick="resetearLista()">Reset</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nombre</th>
+                    <th>Nº de Máquina</th>
+                    <th>Prioridad</th>
+                    <th>Status de Reparación</th>
+                    <th>Acciones</th>
+                    <th>Fecha y Hora de Ingreso</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Aquí se agregarán las filas de reparaciones -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Formulario flotante -->
+    <div id="formulario" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarFormulario()">&times;</span>
+            <h2>Ingresar Reparación</h2>
+            <form id="form-reparacion">
+                <label for="nombre">Nombre del Operario:</label>
+                <input type="text" id="nombre" required>
+
+                <label for="numeroMaquina">Número de Máquina:</label>
+                <input type="text" id="numeroMaquina" required>
+
+                <label for="prioridad">Prioridad:</label>
+                <select id="prioridad">
+                    <option value="alta">Alta</option>
+                    <option value="media">Media</option>
+                    <option value="baja">Baja</option>
+                </select>
+
+                <label for="status">Status de Reparación:</label>
+                <select id="status">
+                    <option value="en_reparacion">En reparación</option>
+                    <option value="funcionando">Funcionando</option>
+                    <option value="detenido">Detenido</option>
+                </select>
+
+                <label for="imagen">Agregar Imagen:</label>
+                <input type="file" id="imagen" accept="image/*">
+
+                <label for="descripcion">Descripción:</label>
+                <textarea id="descripcion" rows="4" required></textarea>
+
+                <button type="submit">Agregar Reparación</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ventana emergente para mostrar la imagen y descripción -->
+    <div id="ventanaEmergente" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarVentanaEmergente()">&times;</span>
+            <h2>Detalles de la Reparación</h2>
+            <img id="imagenReparacion" src="" alt="Imagen de la reparación" style="max-width: 80%; height: auto;">
+            <p id="descripcionReparacion"></p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Registrar el Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registrado con éxito:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('Error al registrar el ServiceWorker:', error);
+                    });
+            });
+        }
+    </script>
+    <script src="https://apis.google.com/js/api.js"></script>
+    <script src="https://accounts.google.com/gsi/client"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            gapiLoaded();
+            gisLoaded();
+        });
+    </script>
+</body>
+</html>
