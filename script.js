@@ -157,10 +157,15 @@ function resetearLista() {
     const contrasena = prompt("Ingrese la contraseña:");
 
     if (usuario === "admin" && contrasena === "admin1234") {
-        localStorage.removeItem('reparaciones');
-        reparaciones = [];
-        document.querySelector('.reparaciones-container tbody').innerHTML = '';
-        alert("La lista ha sido reseteada.");
+        // Limpiar Firebase
+        reparacionesRef.remove()
+            .then(() => {
+                alert("La lista ha sido reseteada.");
+            })
+            .catch(error => {
+                console.error('Error al resetear:', error);
+                alert('Error al resetear la lista');
+            });
     } else {
         alert("Usuario o contraseña incorrectos.");
     }
@@ -198,69 +203,30 @@ document.getElementById("form-reparacion").addEventListener("submit", function(e
 
 // Función para agregar una nueva reparación
 function agregarReparacion(nombre, numeroMaquina, prioridad, status, imagen, descripcion) {
-    const tbody = document.querySelector('.reparaciones-container tbody');
-    const nuevaFila = document.createElement('tr');
-
     const fechaHoraIngreso = new Date().toLocaleString();
-
-    nuevaFila.innerHTML = `
-        <td>${nombre}</td>
-        <td>${numeroMaquina}</td>
-        <td>
-            <select onchange="cambiarColorFila(this)">
-                <option value="alta" ${prioridad === 'alta' ? 'selected' : ''}>Alta</option>
-                <option value="media" ${prioridad === 'media' ? 'selected' : ''}>Media</option>
-                <option value="baja" ${prioridad === 'baja' ? 'selected' : ''}>Baja</option>
-            </select>
-        </td>
-        <td>
-            <div class="status-container">
-                <span class="status-circle" id="status-circle-${nombre}"></span>
-                <select onchange="desmarcarFuncionando(this); actualizarColorCirculo(this)">
-                    <option value="en_reparacion" ${status === 'en_reparacion' ? 'selected' : ''}>En reparación</option>
-                    <option value="funcionando" ${status === 'funcionando' ? 'selected' : ''}>Funcionando</option>
-                    <option value="detenido" ${status === 'detenido' ? 'selected' : ''}>Detenido</option>
-                </select>
-            </div>
-        </td>
-        <td>
-            <button onclick="verImagen('${nombre}', '${imagen}', '${descripcion}')">Abrir</button>
-        </td>
-        <td>${fechaHoraIngreso}</td>
-    `;
-
-    tbody.appendChild(nuevaFila);
-    cambiarColorFila(nuevaFila.querySelector('select'));
-    actualizarColorCirculo(nuevaFila.querySelector('select:nth-child(2)'));
-
-    // Guardar la nueva reparación en el array y en localStorage
-    const nuevaReparacion = { 
-        nombre, 
-        numeroMaquina, 
-        prioridad, 
-        status, 
-        imagen, 
-        descripcion, 
-        fechaHoraIngreso 
-    };
     
-    reparaciones.push(nuevaReparacion);
-    guardarReparaciones();
-
-    if (status === 'detenido' && prioridad === 'alta') {
-        nuevaFila.classList.add('tr-intermitente');
-        iniciarIntermitente(nuevaFila);
-    }
-
-    // Después de guardar la reparación, enviar el correo
-    enviarCorreoNuevaReparacion({
+    const nuevaReparacion = {
         nombre,
         numeroMaquina,
         prioridad,
         status,
+        imagen,
         descripcion,
         fechaHoraIngreso
-    });
+    };
+
+    // Guardar en Firebase
+    const newReparacionRef = reparacionesRef.push();
+    newReparacionRef.set(nuevaReparacion)
+        .then(() => {
+            console.log('Reparación guardada en Firebase');
+            // Enviar correo después de guardar exitosamente
+            enviarCorreoNuevaReparacion(nuevaReparacion);
+        })
+        .catch(error => {
+            console.error('Error al guardar en Firebase:', error);
+            alert('Error al guardar la reparación');
+        });
 }
 
 // Función para enviar el correo
@@ -401,27 +367,15 @@ document.addEventListener('change', function(e) {
 
         const index = Array.from(fila.parentNode.children).indexOf(fila);
         if (index !== -1) {
-            // Actualizar el estado en el array de reparaciones
             const prioridadSelect = fila.querySelector('select[onchange*="cambiarColorFila"]');
             const statusSelect = fila.querySelector('select[onchange*="desmarcarFuncionando"]');
             
-            // Actualizar los valores en el array
-            reparaciones[index].prioridad = prioridadSelect.value;
-            reparaciones[index].status = statusSelect.value;
-            
-            // Actualizar estilos visuales
-            if (statusSelect.value === 'funcionando') {
-                fila.style.backgroundColor = 'white';
-                fila.style.color = '#333';
-                fila.classList.remove('alta', 'media', 'baja');
-            } else {
-                fila.style.backgroundColor = '';
-                fila.style.color = '';
-                cambiarColorFila(prioridadSelect);
-            }
-            
-            // Guardar los cambios
-            guardarReparaciones();
+            // Actualizar en Firebase
+            const reparacionKey = Object.keys(reparacionesRef.val())[index];
+            reparacionesRef.child(reparacionKey).update({
+                prioridad: prioridadSelect.value,
+                status: statusSelect.value
+            });
         }
     }
 });
